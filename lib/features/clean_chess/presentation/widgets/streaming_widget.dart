@@ -1,13 +1,15 @@
 import 'package:cleanchess/core/clean_chess/utilities/style.dart';
 import 'package:cleanchess/features/clean_chess/presentation/blocs/tv_game_stream_cubit.dart';
-import 'package:cleanchess/features/clean_chess/presentation/widgets/chessboard.dart';
+import 'package:cleanchess/features/clean_chess/presentation/blocs/user_cubit.dart';
+import 'package:cleanchess/features/clean_chess/presentation/pages/profile_screen.dart';
 import 'package:cleanchess/features/clean_chess/presentation/widgets/chessboard_interpreter.dart';
 import 'package:cleanchess/features/clean_chess/presentation/widgets/padded_items.dart';
+import 'package:cleanchess/features/clean_chess/presentation/widgets/title_item.dart';
 import 'package:cleanchess/injection_container.dart';
 import 'package:dartchess/dartchess.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lichess_client_dio/lichess_client_dio.dart';
+import 'package:lichess_client_dio/lichess_client_dio.dart' as lichess;
 
 class StreamingWidget extends StatefulWidget {
   const StreamingWidget({super.key});
@@ -31,16 +33,17 @@ class _StreamingWidgetState extends State<StreamingWidget> {
           [
             PaddedItems(children: [
               BlocBuilder<TvGameStreamCubit,
-                  AsyncSnapshot<LichessTvGameSummary>>(
+                  AsyncSnapshot<lichess.LichessTvGameSummary>>(
                 bloc: _tvGameStreamBloc,
                 builder: (context, state) {
                   return _streamingUserItem(
                     isWhite: false,
-                    title: 'IM',
+                    title: state.data?.data?.blackPlayer?.user?.title,
                     color: Colors.amber,
                     name: state.data?.data?.blackPlayer?.user?.name ??
                         state.data?.data?.blackPlayer?.user?.id ??
                         'Loading info...',
+                    userId: state.data?.data?.blackPlayer?.user?.id ?? "",
                     elo: state.data?.data?.blackPlayer?.rating?.toString() ??
                         'Loading...',
                     time: '0:20',
@@ -52,7 +55,7 @@ class _StreamingWidgetState extends State<StreamingWidget> {
             AspectRatio(
               aspectRatio: 1,
               child: BlocBuilder<TvGameStreamCubit,
-                  AsyncSnapshot<LichessTvGameSummary>>(
+                  AsyncSnapshot<lichess.LichessTvGameSummary>>(
                 bloc: _tvGameStreamBloc,
                 builder: (context, state) {
                   final fen = state.data?.data?.fen;
@@ -67,16 +70,17 @@ class _StreamingWidgetState extends State<StreamingWidget> {
             PaddedItems(
               children: [
                 BlocBuilder<TvGameStreamCubit,
-                    AsyncSnapshot<LichessTvGameSummary>>(
+                    AsyncSnapshot<lichess.LichessTvGameSummary>>(
                   bloc: _tvGameStreamBloc,
                   builder: (context, state) {
                     return _streamingUserItem(
                       isWhite: true,
-                      title: 'GM',
+                      title: state.data?.data?.whitePlayer?.user?.title,
                       color: Colors.pink,
                       name: state.data?.data?.whitePlayer?.user?.name ??
                           state.data?.data?.whitePlayer?.user?.id ??
                           'Loading info...',
+                      userId: state.data?.data?.whitePlayer?.user?.id ?? "",
                       elo: state.data?.data?.whitePlayer?.rating?.toString() ??
                           'Loading...',
                       time: '0:20',
@@ -91,24 +95,47 @@ class _StreamingWidgetState extends State<StreamingWidget> {
 
   Widget _streamingUserItem({
     required bool isWhite,
-    required String title,
+    required lichess.Title? title,
     required Color color,
     required String name,
     required String elo,
+    required String userId,
     String? time,
   }) =>
       Row(
         children: [
           _teamColorItem(isWhite),
           const SizedBox(width: 10),
-          _titleItem(title, color),
+          TitleItem(title: title),
           const SizedBox(width: 5),
-          Text(
-            name,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+          BlocListener<UserCubit, UserState>(
+            listener: (context, state) {
+              state.maybeMap(
+                publicData: (value) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ProfileScreen(
+                        user: value.user,
+                      ),
+                    ),
+                  );
+                },
+                orElse: () {},
+              );
+            },
+            child: InkWell(
+              onTap: () {
+                sl<UserCubit>().getPublicData(userId: userId);
+              },
+              child: Text(
+                name,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 5),
@@ -132,15 +159,6 @@ class _StreamingWidgetState extends State<StreamingWidget> {
               ),
             )
         ],
-      );
-
-  Widget _titleItem(String title, Color color) => Text(
-        title,
-        style: TextStyle(
-          fontSize: 16,
-          color: color,
-          fontWeight: FontWeight.bold,
-        ),
       );
 
   Widget _teamColorItem(bool isWhite) => CircleAvatar(

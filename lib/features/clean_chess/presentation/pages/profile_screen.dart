@@ -3,6 +3,7 @@ import 'package:cleanchess/features/clean_chess/presentation/blocs/user_cubit.da
 import 'package:cleanchess/features/clean_chess/presentation/pages/stats_screen.dart';
 import 'package:cleanchess/features/clean_chess/presentation/widgets/chessboard.dart';
 import 'package:cleanchess/features/clean_chess/presentation/widgets/loading_skeleton.dart';
+import 'package:cleanchess/features/clean_chess/presentation/widgets/title_item.dart';
 import 'package:cleanchess/injection_container.dart';
 import 'package:flutter/material.dart';
 import 'package:cleanchess/features/clean_chess/presentation/widgets/profilepage_mode_items.dart';
@@ -141,10 +142,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.only(top: 37.5),
-          child: 
-            // thanks to https://github.com/lipis/flag-icons
-            SvgPicture.asset("assets/icons/flags/${widget.user.profile?.country?.toLowerCase() ?? "xx"}.svg", height: kIconsHeigth)
+            padding: const EdgeInsets.only(top: 37.5),
+            child:
+                // thanks to https://github.com/lipis/flag-icons
+                SvgPicture.asset(
+                    "assets/icons/flags/${widget.user.profile?.country?.toLowerCase() ?? "xx"}.svg",
+                    height: kIconsHeigth)),
+        Padding(
+          padding: const EdgeInsets.only(left: 15, top: 40, right: 8),
+          child: TitleItem(title: widget.user.title),
         ),
       ],
     );
